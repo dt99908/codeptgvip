@@ -11,32 +11,38 @@ export default async function handler(req, res) {
   try {
     const { action, userId, code } = req.body || {};
 
-    // 1. ACTION: Tra cứu thông tin nhân vật theo Role ID
+    // 1. ACTION: Tra cứu thông tin nhân vật qua Shop VNG API
     if (action === 'get_info') {
       if (!userId) {
         return res.status(400).json({ success: false, message: 'Thiếu Role ID' });
       }
 
-      // Gửi request tra cứu thông tin nhân vật tới VNG
-      const infoRes = await fetch(`https://giftcode.vnggames.com/vn/redeem/ptg/get-role-info?role_id=${encodeURIComponent(userId)}`, {
-        method: 'GET',
+      // Gọi API kiểm tra nhân vật từ shop.vnggames.com
+      const shopRes = await fetch('https://shop.vnggames.com/api/role/info', {
+        method: 'POST',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://shop.vnggames.com/vn/game/ptgvn'
+        },
+        body: JSON.stringify({
+          game_code: 'ptgvn',
+          role_id: userId
+        })
       });
 
-      const infoText = await infoRes.text();
-      let infoData;
+      const responseText = await shopRes.text();
+      let shopData;
       try {
-        infoData = JSON.parse(infoText);
+        shopData = JSON.parse(responseText);
       } catch (e) {
-        infoData = { success: false, message: 'Không thể lấy thông tin nhân vật', raw: infoText.substring(0, 100) };
+        shopData = { success: false, message: 'Lỗi parse JSON từ Shop VNG', raw: responseText.substring(0, 100) };
       }
 
-      return res.status(200).json(infoData);
+      return res.status(200).json(shopData);
     }
 
-    // 2. ACTION: Nhập Giftcode
+    // 2. ACTION: Nhập Giftcode VNG
     if (!userId || !code) {
       return res.status(400).json({ success: false, message: 'Thiếu userId hoặc code' });
     }
@@ -66,4 +72,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Lỗi Vercel Server: ' + error.message });
   }
-}
+      }
