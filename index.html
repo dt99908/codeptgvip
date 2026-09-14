@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Redeemer - Phong Thần Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 font-sans">
+  <div class="max-w-2xl mx-auto space-y-6">
+    <header class="text-center py-4">
+      <h1 class="text-3xl font-bold text-indigo-400">Auto Redeemer</h1>
+      <p class="text-slate-400 text-sm">Hệ thống nhập code tự động qua Vercel API & Supabase</p>
+    </header>
+
+    <!-- Main Card -->
+    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">ID Nhân Vật (Role ID)</label>
+        <input type="text" id="roleId" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID nhân vật...">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Danh Sách Giftcode (Mỗi code 1 dòng)</label>
+        <textarea id="codeList" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="PTGCODE1&#10;PTGCODE2"></textarea>
+      </div>
+
+      <button id="btnStart" onclick="startRedeem()" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 rounded-lg transition duration-200 shadow-lg shadow-indigo-600/30">
+        Bắt Đầu Nhập Code
+      </button>
+    </div>
+
+    <!-- Log Box -->
+    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
+      <h2 class="text-lg font-semibold mb-3 flex items-center justify-between">
+        <span>Nhật Ký Xử Lý</span>
+        <button onclick="clearLog()" class="text-xs text-slate-400 hover:text-slate-200">Xóa log</button>
+      </h2>
+      <div id="logBox" class="bg-slate-950 p-4 rounded-lg h-64 overflow-y-auto font-mono text-xs space-y-1.5 border border-slate-800">
+        <div class="text-slate-500">[Hệ thống] Sẵn sàng thực thi...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Cấu hình Supabase & Vercel API
+    const SUPABASE_URL = "https://nwarxlayigxqatirtrwe.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_0HDFE7WR9ayPus"; 
+    const VERCEL_API_URL = "https://codeptgvip.vercel.app/api/redeem";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function appendLog(msg, type = 'info') {
+      const logBox = document.getElementById('logBox');
+      const time = new Date().toLocaleTimeString();
+      let colorClass = 'text-slate-300';
+      if (type === 'success') colorClass = 'text-green-400';
+      if (type === 'error') colorClass = 'text-red-400';
+      if (type === 'warning') colorClass = 'text-yellow-400';
+
+      const div = document.createElement('div');
+      div.className = colorClass;
+      div.innerText = `[${time}] ${msg}`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
+    }
+
+    async function saveToSupabase(userId, code, status, message) {
+      try {
+        await supabaseClient.from('redeem_logs').insert([
+          { user_id: userId, code: code, status: status, message: message }
+        ]);
+      } catch (err) {
+        console.error('Lỗi lưu log Supabase:', err);
+      }
+    }
+
+    async function startRedeem() {
+      const roleId = document.getElementById('roleId').value.trim();
+      const rawCodes = document.getElementById('codeList').value.trim();
+
+      if (!roleId) {
+        alert('Vui lòng nhập Role ID!');
+        return;
+      }
+      if (!rawCodes) {
+        alert('Vui lòng nhập ít nhất 1 code!');
+        return;
+      }
+
+      const codes = rawCodes.split('\n').map(c => c.trim()).filter(c => c.length > 0);
+      const btn = document.getElementById('btnStart');
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+
+      appendLog(`Bắt đầu xử lý ${codes.length} code cho ID: ${roleId}...`, 'warning');
+
+      for (let i = 0; i < codes.length; i++) {
+        const code = codes[i];
+        appendLog(`[${i + 1}/${codes.length}] Đang gửi code: ${code}...`);
+
+        try {
+          const res = await fetch(VERCEL_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: roleId, code: code })
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            appendLog(`Thành công [${code}]: ${JSON.stringify(data)}`, 'success');
+            await saveToSupabase(roleId, code, 'success', JSON.stringify(data));
+          } else {
+            appendLog(`Thất bại [${code}]: ${data.message || 'Lỗi không xác định'}`, 'error');
+            await saveToSupabase(roleId, code, 'failed', data.message || 'Error');
+          }
+        } catch (err) {
+          appendLog(`Lỗi kết nối [${code}]: ${err.message}`, 'error');
+          await saveToSupabase(roleId, code, 'failed', err.message);
+        }
+
+        // Tạm dừng 2 giây giữa các lần gửi
+        if (i < codes.length - 1) {
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+
+      appendLog('=== HOÀN THÀNH TẤT CẢ CODE ===', 'warning');
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+    }
+  </script>
+</body>
+</html>
