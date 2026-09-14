@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Auto Redeemer - Phong Thần Game</title>
+  <title>Auto Redeemer - PTG Game</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -18,7 +18,22 @@
     <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">ID Nhân Vật (Role ID)</label>
-        <input type="text" id="roleId" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID nhân vật...">
+        <div class="flex gap-2">
+          <input type="text" id="roleId" onblur="checkRoleInfo()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID...">
+          <button onclick="checkRoleInfo()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 rounded-lg whitespace-nowrap border border-slate-600">Kiểm tra ID</button>
+        </div>
+        
+        <!-- Khung hiển thị Tên nhân vật -->
+        <div id="userInfoBox" class="hidden mt-3 p-3 bg-indigo-950/60 border border-indigo-500/30 rounded-lg text-sm">
+          <div class="flex items-center gap-2">
+            <span class="text-indigo-400 font-semibold">🎮 Tên nhân vật:</span>
+            <span id="roleName" class="font-bold text-green-400">Đang tải...</span>
+          </div>
+          <div id="serverContainer" class="flex items-center gap-2 mt-1 text-xs text-slate-300">
+            <span class="text-indigo-400">🌐 Server:</span>
+            <span id="serverName">--</span>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -44,7 +59,6 @@
   </div>
 
   <script>
-    // Cấu hình Supabase & Vercel API
     const SUPABASE_URL = "https://nwarxlayigxqatirtrwe.supabase.co";
     const SUPABASE_KEY = "sb_publishable_0HDFE7WR9ayPus"; 
     const VERCEL_API_URL = "https://codeptgvip.vercel.app/api/redeem";
@@ -68,6 +82,50 @@
 
     function clearLog() {
       document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
+    }
+
+    // Hàm tra cứu tên nhân vật
+    async function checkRoleInfo() {
+      const roleId = document.getElementById('roleId').value.trim();
+      if (!roleId) return;
+
+      const infoBox = document.getElementById('userInfoBox');
+      const roleName = document.getElementById('roleName');
+      const serverName = document.getElementById('serverName');
+
+      infoBox.classList.remove('hidden');
+      roleName.className = "font-bold text-yellow-400";
+      roleName.innerText = "Đang kiểm tra ID...";
+      serverName.innerText = "...";
+
+      try {
+        const res = await fetch(VERCEL_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_info', userId: roleId })
+        });
+
+        const data = await res.json();
+
+        // Kiểm tra dữ liệu trả về từ VNG
+        const name = data.role_name || data.name || data.data?.role_name || data.data?.name;
+        const server = data.server_name || data.server_id || data.data?.server_name || "N/A";
+
+        if (name) {
+          roleName.className = "font-bold text-green-400";
+          roleName.innerText = name;
+          serverName.innerText = server;
+          appendLog(`Tìm thấy nhân vật: ${name} (${server})`, 'success');
+        } else {
+          roleName.className = "font-bold text-red-400";
+          roleName.innerText = "Không tìm thấy nhân vật hoặc ID không hợp lệ";
+          appendLog(`Kiểm tra ID [${roleId}]: Phản hồi -> ${JSON.stringify(data)}`, 'warning');
+        }
+      } catch (err) {
+        roleName.className = "font-bold text-red-400";
+        roleName.innerText = "Lỗi kết nối kiểm tra ID";
+        appendLog(`Lỗi tra cứu ID: ${err.message}`, 'error');
+      }
     }
 
     async function saveToSupabase(userId, code, status, message) {
@@ -125,7 +183,6 @@
           await saveToSupabase(roleId, code, 'failed', err.message);
         }
 
-        // Tạm dừng 2 giây giữa các lần gửi
         if (i < codes.length - 1) {
           await new Promise(r => setTimeout(r, 2000));
         }
