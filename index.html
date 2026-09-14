@@ -19,7 +19,7 @@
       <div>
         <label class="block text-sm font-medium mb-1">ID Nhân Vật (Role ID)</label>
         <div class="flex gap-2">
-          <input type="text" id="roleId" onblur="checkRoleInfo()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID...">
+          <input type="text" id="roleId" onblur="checkRoleInfo()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID (VD: WM8C-XSHL-LMYY)">
           <button onclick="checkRoleInfo()" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 rounded-lg font-semibold whitespace-nowrap transition">Kiểm tra ID</button>
         </div>
         
@@ -84,7 +84,7 @@
       document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
     }
 
-    // Tra cứu tên nhân vật qua Shop VNG API
+    // Tra cứu tên nhân vật
     async function checkRoleInfo() {
       const roleId = document.getElementById('roleId').value.trim();
       if (!roleId) return;
@@ -95,7 +95,7 @@
 
       infoBox.classList.remove('hidden');
       roleName.className = "font-bold text-yellow-400";
-      roleName.innerText = "Đang kiểm tra trên Shop VNG...";
+      roleName.innerText = "Đang tra cứu...";
       serverName.innerText = "...";
 
       try {
@@ -107,24 +107,30 @@
 
         const data = await res.json();
 
-        // Bắt trường tên nhân vật từ phản hồi của Shop VNG
-        const name = data.role_name || data.data?.role_name || data.data?.name || data.name;
-        const server = data.server_name || data.data?.server_name || data.data?.server_id || "Việt Nam";
+        if (data.is_html) {
+          roleName.className = "font-bold text-red-400";
+          roleName.innerText = "VNG Vẫn chặn Vercel IP (Cloudflare Bot Check)";
+          appendLog(`VNG Shop trả về trang HTML Cloudflare.`, 'error');
+          return;
+        }
+
+        const name = data.data?.role_name || data.role_name || data.data?.name || data.name;
+        const server = data.data?.server_name || data.server_name || "Việt Nam (PTG)";
 
         if (name || (data.code === 0 && data.data)) {
           roleName.className = "font-bold text-green-400";
           roleName.innerText = name || data.data.role_name;
           serverName.innerText = server;
-          appendLog(`Tìm thấy nhân vật: ${roleName.innerText} (${server})`, 'success');
+          appendLog(`Xác nhận nhân vật: ${roleName.innerText}`, 'success');
         } else {
           roleName.className = "font-bold text-red-400";
-          roleName.innerText = data.message || "Không tìm thấy nhân vật hoặc ID không hợp lệ";
-          appendLog(`Kiểm tra ID [${roleId}]: ${JSON.stringify(data)}`, 'warning');
+          roleName.innerText = data.message || "ID không tồn tại trên hệ thống VNG";
+          appendLog(`Không tìm thấy ID [${roleId}]: ${JSON.stringify(data)}`, 'warning');
         }
       } catch (err) {
         roleName.className = "font-bold text-red-400";
-        roleName.innerText = "Lỗi kết nối kiểm tra ID";
-        appendLog(`Lỗi tra cứu ID: ${err.message}`, 'error');
+        roleName.innerText = "Lỗi kết nối API";
+        appendLog(`Lỗi tra cứu: ${err.message}`, 'error');
       }
     }
 
@@ -134,7 +140,7 @@
           { user_id: userId, code: code, status: status, message: message }
         ]);
       } catch (err) {
-        console.error('Lỗi lưu log Supabase:', err);
+        console.error('Lỗi lưu Supabase:', err);
       }
     }
 
@@ -172,7 +178,7 @@
           const data = await res.json();
 
           if (res.ok) {
-            appendLog(`Thành công [${code}]: ${JSON.stringify(data)}`, 'success');
+            appendLog(`Kết quả [${code}]: ${JSON.stringify(data)}`, 'success');
             await saveToSupabase(roleId, code, 'success', JSON.stringify(data));
           } else {
             appendLog(`Thất bại [${code}]: ${data.message || 'Lỗi không xác định'}`, 'error');
