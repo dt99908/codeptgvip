@@ -84,7 +84,6 @@
       document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
     }
 
-    // Tra cứu ID nhân vật bằng AllOrigins Proxy
     async function checkRoleInfo() {
       const roleId = document.getElementById('roleId').value.trim();
       if (!roleId) return;
@@ -95,136 +94,28 @@
 
       infoBox.classList.remove('hidden');
       roleName.className = "font-bold text-yellow-400";
-      roleName.innerText = "Đang kiểm tra ID...";
+      roleName.innerText = "Đang tra cứu...";
       serverName.innerText = "...";
 
-      const targetApi = "https://shop.vnggames.com/api/v1/role/info";
-      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetApi);
+      // Sử dụng API Proxy của AllOrigins
+      const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://shop.vnggames.com/api/v1/role/info?game_code=ptgvn&account_type=role_id&role_id=" + roleId);
 
       try {
-        const res = await fetch(proxyUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            game_code: 'ptgvn',
-            account_type: 'role_id',
-            role_id: roleId
-          })
-        });
-
+        const res = await fetch(proxyUrl);
         const data = await res.json();
-        const name = data.data?.role_name || data.data?.name || data.role_name;
-        const server = data.data?.server_name || "Việt Nam (PTG)";
+        const innerData = JSON.parse(data.contents);
+
+        const name = innerData.data?.role_name || innerData.data?.name || innerData.role_name;
+        const server = innerData.data?.server_name || "Việt Nam (PTG)";
 
         if (name) {
           roleName.className = "font-bold text-green-400";
           roleName.innerText = name;
           serverName.innerText = server;
-          appendLog(`Xác nhận nhân vật: ${name} (${server})`, 'success');
+          appendLog(`Tìm thấy nhân vật: ${name} (${server})`, 'success');
         } else {
           roleName.className = "font-bold text-red-400";
-          roleName.innerText = data.message || "Không tìm thấy Role ID này";
-          appendLog(`Phản hồi VNG: ${data.message || 'ID không hợp lệ'}`, 'warning');
-        }
-      } catch (err) {
-        roleName.className = "font-bold text-red-400";
-        roleName.innerText = "Lỗi tra cứu ID (Kiểm tra lại kết nối)";
-        appendLog(`Lỗi tra cứu: ${err.message}`, 'error');
-      }
-    }
-
-    async function saveToSupabase(userId, code, status, message) {
-      try {
-        await supabaseClient.from('redeem_logs').insert([
-          { user_id: userId, code: code, status: status, message: message }
-        ]);
-      } catch (err) {
-        console.error('Lỗi lưu Supabase:', err);
-      }
-    }
-
-    async function startRedeem() {
-      const roleId = document.getElementById('roleId').value.trim();
-      const rawCodes = document.getElementById('codeList').value.trim();
-
-      if (!roleId) {
-        alert('Vui lòng nhập Role ID!');
-        return;
-      }
-      if (!rawCodes) {
-        alert('Vui lòng nhập ít nhất 1 code!');
-        return;
-      }
-
-      const codes = rawCodes.split('\n').map(c => c.trim()).filter(c => c.length > 0);
-      const btn = document.getElementById('btnStart');
-      btn.disabled = true;
-      btn.classList.add('opacity-50');
-
-      appendLog(`Bắt đầu xử lý ${codes.length} code cho ID: ${roleId}...`, 'warning');
-
-      for (let i = 0; i < codes.length; i++) {
-        const code = codes[i];
-        appendLog(`[${i + 1}/${codes.length}] Đang gửi code: ${code}...`);
-
-        try {
-          const res = await fetch(VERCEL_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: roleId, code: code })
-          });
-
-          const data = await res.json();
-
-          if (res.ok) {
-            appendLog(`Kết quả [${code}]: ${JSON.stringify(data)}`, 'success');
-            await saveToSupabase(roleId, code, 'success', JSON.stringify(data));
-          } else {
-            appendLog(`Thất bại [${code}]: ${data.message || 'Lỗi không xác định'}`, 'error');
-            await saveToSupabase(roleId, code, 'failed', data.message || 'Error');
-          }
-        } catch (err) {
-          appendLog(`Lỗi kết nối [${code}]: ${err.message}`, 'error');
-          await saveToSupabase(roleId, code, 'failed', err.message);
-        }
-
-        if (i < codes.length - 1) {
-          await new Promise(r => setTimeout(r, 2000));
-        }
-      }
-
-      appendLog('=== HOÀN THÀNH TẤT CẢ CODE ===', 'warning');
-      btn.disabled = false;
-      btn.classList.remove('opacity-50');
-    }
-  </script>
-</body>
-</html>
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            game_code: 'ptgvn',
-            account_type: 'role_id',
-            role_id: roleId
-          })
-        });
-
-        const data = await res.json();
-        const name = data.data?.role_name || data.data?.name;
-        const server = data.data?.server_name || "Việt Nam";
-
-        if (name) {
-          roleName.className = "font-bold text-green-400";
-          roleName.innerText = name;
-          serverName.innerText = server;
-          appendLog(`Xác nhận nhân vật: ${name} (${server})`, 'success');
-        } else {
-          roleName.className = "font-bold text-red-400";
-          roleName.innerText = data.message || "Không tìm thấy ID nhân vật này";
+          roleName.innerText = innerData.message || "Không tìm thấy ID nhân vật này";
           appendLog(`Không tìm thấy ID [${roleId}]`, 'warning');
         }
       } catch (err) {
