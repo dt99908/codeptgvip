@@ -62,6 +62,7 @@
     const SUPABASE_URL = "https://nwarxlayigxqatirtrwe.supabase.co";
     const SUPABASE_KEY = "sb_publishable_0HDFE7WR9ayPus"; 
     const VERCEL_API_URL = "https://codeptgvip.vercel.app/api/redeem";
+    const VERCEL_CHECK_URL = "https://codeptgvip.vercel.app/api/check-role"; // API kiểm tra ID trên Vercel của bạn
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -84,6 +85,7 @@
       document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
     }
 
+    // Kiểm tra ID thông qua Vercel API backend
     async function checkRoleInfo() {
       const roleId = document.getElementById('roleId').value.trim();
       if (!roleId) return;
@@ -94,34 +96,34 @@
 
       infoBox.classList.remove('hidden');
       roleName.className = "font-bold text-yellow-400";
-      roleName.innerText = "Đang tra cứu...";
+      roleName.innerText = "Đang kiểm tra qua Vercel...";
       serverName.innerText = "...";
 
-      // Sử dụng API Proxy của AllOrigins
-      const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://shop.vnggames.com/api/v1/role/info?game_code=ptgvn&account_type=role_id&role_id=" + roleId);
-
       try {
-        const res = await fetch(proxyUrl);
+        const res = await fetch(VERCEL_CHECK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: roleId })
+        });
+
         const data = await res.json();
-        const innerData = JSON.parse(data.contents);
 
-        const name = innerData.data?.role_name || innerData.data?.name || innerData.role_name;
-        const server = innerData.data?.server_name || "Việt Nam (PTG)";
-
-        if (name) {
+        if (res.ok && (data.role_name || data.name)) {
+          const name = data.role_name || data.name;
+          const server = data.server_name || "Việt Nam";
           roleName.className = "font-bold text-green-400";
           roleName.innerText = name;
           serverName.innerText = server;
-          appendLog(`Tìm thấy nhân vật: ${name} (${server})`, 'success');
+          appendLog(`Xác nhận nhân vật: ${name} (${server})`, 'success');
         } else {
           roleName.className = "font-bold text-red-400";
-          roleName.innerText = innerData.message || "Không tìm thấy ID nhân vật này";
-          appendLog(`Không tìm thấy ID [${roleId}]`, 'warning');
+          roleName.innerText = data.message || "Không tìm thấy ID nhân vật";
+          appendLog(`Lỗi kiểm tra ID: ${data.message || 'Không rõ'}`, 'warning');
         }
       } catch (err) {
         roleName.className = "font-bold text-red-400";
-        roleName.innerText = "Lỗi kết nối tra cứu ID";
-        appendLog(`Lỗi tra cứu: ${err.message}`, 'error');
+        roleName.innerText = "Lỗi kết nối tới Vercel API";
+        appendLog(`Lỗi: ${err.message}`, 'error');
       }
     }
 
