@@ -20,7 +20,7 @@
         <label class="block text-sm font-medium mb-1">ID Nhân Vật (Role ID)</label>
         <div class="flex gap-2">
           <input type="text" id="roleId" onblur="checkRoleInfo()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID...">
-          <button onclick="checkRoleInfo()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 rounded-lg whitespace-nowrap border border-slate-600">Kiểm tra ID</button>
+          <button onclick="checkRoleInfo()" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 rounded-lg font-semibold whitespace-nowrap transition">Kiểm tra ID</button>
         </div>
         
         <!-- Khung hiển thị Tên nhân vật -->
@@ -84,7 +84,7 @@
       document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
     }
 
-    // Hàm tra cứu tên nhân vật
+    // Tra cứu tên nhân vật qua Shop VNG API
     async function checkRoleInfo() {
       const roleId = document.getElementById('roleId').value.trim();
       if (!roleId) return;
@@ -95,7 +95,7 @@
 
       infoBox.classList.remove('hidden');
       roleName.className = "font-bold text-yellow-400";
-      roleName.innerText = "Đang kiểm tra ID...";
+      roleName.innerText = "Đang kiểm tra trên Shop VNG...";
       serverName.innerText = "...";
 
       try {
@@ -107,19 +107,19 @@
 
         const data = await res.json();
 
-        // Kiểm tra dữ liệu trả về từ VNG
-        const name = data.role_name || data.name || data.data?.role_name || data.data?.name;
-        const server = data.server_name || data.server_id || data.data?.server_name || "N/A";
+        // Bắt trường tên nhân vật từ phản hồi của Shop VNG
+        const name = data.role_name || data.data?.role_name || data.data?.name || data.name;
+        const server = data.server_name || data.data?.server_name || data.data?.server_id || "Việt Nam";
 
-        if (name) {
+        if (name || (data.code === 0 && data.data)) {
           roleName.className = "font-bold text-green-400";
-          roleName.innerText = name;
+          roleName.innerText = name || data.data.role_name;
           serverName.innerText = server;
-          appendLog(`Tìm thấy nhân vật: ${name} (${server})`, 'success');
+          appendLog(`Tìm thấy nhân vật: ${roleName.innerText} (${server})`, 'success');
         } else {
           roleName.className = "font-bold text-red-400";
-          roleName.innerText = "Không tìm thấy nhân vật hoặc ID không hợp lệ";
-          appendLog(`Kiểm tra ID [${roleId}]: Phản hồi -> ${JSON.stringify(data)}`, 'warning');
+          roleName.innerText = data.message || "Không tìm thấy nhân vật hoặc ID không hợp lệ";
+          appendLog(`Kiểm tra ID [${roleId}]: ${JSON.stringify(data)}`, 'warning');
         }
       } catch (err) {
         roleName.className = "font-bold text-red-400";
