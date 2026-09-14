@@ -111,16 +111,20 @@
           });
 
           const data = await res.json();
+          
+          // Trích xuất nội dung thông báo từ API trả về
+          const serverMsg = data.message || data.msg || data.error || (data.data && data.data.message) || JSON.stringify(data);
+          const isSuccess = res.ok && (data.success === true || data.code === 0 || data.status === 200 || !data.error);
 
-          if (res.ok) {
-            appendLog(`Kết quả [${code}]: ${JSON.stringify(data)}`, 'success');
-            await saveToSupabase(roleId, code, 'success', JSON.stringify(data));
+          if (isSuccess) {
+            appendLog(`[${code}] Thành công: ${serverMsg}`, 'success');
+            await saveToSupabase(roleId, code, 'success', serverMsg);
           } else {
-            appendLog(`Thất bại [${code}]: ${data.message || 'Lỗi không xác định'}`, 'error');
-            await saveToSupabase(roleId, code, 'failed', data.message || 'Error');
+            appendLog(`[${code}] Thất bại: ${serverMsg}`, 'error');
+            await saveToSupabase(roleId, code, 'failed', serverMsg);
           }
         } catch (err) {
-          appendLog(`Lỗi kết nối [${code}]: ${err.message}`, 'error');
+          appendLog(`[${code}] Lỗi kết nối: ${err.message}`, 'error');
           await saveToSupabase(roleId, code, 'failed', err.message);
         }
 
