@@ -19,7 +19,7 @@
       <div>
         <label class="block text-sm font-medium mb-1">ID Nhân Vật (Role ID)</label>
         <div class="flex gap-2">
-          <input type="text" id="roleId" onblur="checkRoleInfo()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID (VD: WM8C-XSHL-LMYY)">
+          <input type="text" id="roleId" onblur="checkRoleInfo()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nhập Role ID (Ví dụ: WM8C-XSHL-LMYY)">
           <button onclick="checkRoleInfo()" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 rounded-lg font-semibold whitespace-nowrap transition">Kiểm tra ID</button>
         </div>
         
@@ -30,7 +30,7 @@
             <span id="roleName" class="font-bold text-green-400">Đang tải...</span>
           </div>
           <div id="serverContainer" class="flex items-center gap-2 mt-1 text-xs text-slate-300">
-            <span class="text-indigo-400">🌐 Server:</span>
+            <span class="text-indigo-400">🌐 Máy chủ:</span>
             <span id="serverName">--</span>
           </div>
         </div>
@@ -84,7 +84,7 @@
       document.getElementById('logBox').innerHTML = '<div class="text-slate-500">[Hệ thống] Đã xóa log.</div>';
     }
 
-    // Tra cứu tên nhân vật
+    // Tra cứu tên nhân vật trực tiếp từ Browser qua CORS Proxy để không bị Cloudflare chặn Vercel IP
     async function checkRoleInfo() {
       const roleId = document.getElementById('roleId').value.trim();
       if (!roleId) return;
@@ -95,41 +95,65 @@
 
       infoBox.classList.remove('hidden');
       roleName.className = "font-bold text-yellow-400";
-      roleName.innerText = "Đang tra cứu...";
+      roleName.innerText = "Đang tra cứu tên nhân vật...";
       serverName.innerText = "...";
 
+      const proxyUrl = "https://corsproxy.io/?";
+      const targetApi = "https://shop.vnggames.com/api/v1/role/info";
+
       try {
-        const res = await fetch(VERCEL_API_URL, {
+        const res = await fetch(proxyUrl + encodeURIComponent(targetApi), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'get_info', userId: roleId })
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            game_code: 'ptgvn',
+            account_type: 'role_id',
+            role_id: roleId
+          })
         });
 
         const data = await res.json();
 
-        if (data.is_html) {
-          roleName.className = "font-bold text-red-400";
-          roleName.innerText = "VNG Vẫn chặn Vercel IP (Cloudflare Bot Check)";
-          appendLog(`VNG Shop trả về trang HTML Cloudflare.`, 'error');
-          return;
-        }
+        // Đọc trường tên nhân vật từ Shop VNG
+        const name = data.data?.role_name || data.data?.name || data.role_name;
+        const server = data.data?.server_name || "Việt Nam";
 
-        const name = data.data?.role_name || data.role_name || data.data?.name || data.name;
-        const server = data.data?.server_name || data.server_name || "Việt Nam (PTG)";
-
-        if (name || (data.code === 0 && data.data)) {
+        if (name) {
           roleName.className = "font-bold text-green-400";
-          roleName.innerText = name || data.data.role_name;
+          roleName.innerText = name;
           serverName.innerText = server;
-          appendLog(`Xác nhận nhân vật: ${roleName.innerText}`, 'success');
+          appendLog(`Tìm thấy nhân vật: ${name} (${server})`, 'success');
+        } else if (data.message) {
+          roleName.className = "font-bold text-red-400";
+          roleName.innerText = data.message;
+          appendLog(`VNG Phản hồi: ${data.message}`, 'warning');
         } else {
           roleName.className = "font-bold text-red-400";
-          roleName.innerText = data.message || "ID không tồn tại trên hệ thống VNG";
-          appendLog(`Không tìm thấy ID [${roleId}]: ${JSON.stringify(data)}`, 'warning');
+          roleName.innerText = "Không tìm thấy Role ID này";
+          appendLog(`Không tìm thấy ID [${roleId}]`, 'warning');
         }
       } catch (err) {
+        // Fallback thử endpoint trực tiếp nếu Proxy nghẽn
+        try {
+          const directRes = await fetch("https://shop.vnggames.com/api/v1/role/info", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ game_code: 'ptgvn', account_type: 'role_id', role_id: roleId })
+          });
+          const directData = await directRes.json();
+          if (directData.data?.role_name) {
+            roleName.className = "font-bold text-green-400";
+            roleName.innerText = directData.data.role_name;
+            serverName.innerText = directData.data.server_name || "Việt Nam";
+            appendLog(`Thành công tra cứu ID: ${directData.data.role_name}`, 'success');
+            return;
+          }
+        } catch (e) {}
+
         roleName.className = "font-bold text-red-400";
-        roleName.innerText = "Lỗi kết nối API";
+        roleName.innerText = "Lỗi kết nối tra cứu ID";
         appendLog(`Lỗi tra cứu: ${err.message}`, 'error');
       }
     }
