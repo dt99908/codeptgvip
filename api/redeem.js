@@ -9,12 +9,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Thiếu Game ID hoặc Mã Code' });
   }
 
-  try {
-    // Sử dụng proxy miễn phí AllOrigins
-    const targetUrl = 'https://coupon.haegin.kr/api/coupon/use';
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch(proxyUrl, {
+  try {
+    const targetUrl = 'https://coupon.haegin.kr/api/coupon/use';
+
+    const response = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -23,16 +24,32 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         user_code: user_code.trim(),
         coupon_code: coupon_code.trim()
-      })
+      }),
+      signal: controller.signal
     });
 
-    const data = await response.json();
-    return res.status(200).json(data);
+    clearTimeout(timeoutId);
+
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Server trả về không phải JSON (VD: HTML lỗi, chặn bot...)
+      return res.status(502).json({
+        message: 'Máy chủ game trả về dữ liệu không hợp lệ.',
+        raw: text.slice(0, 300)
+      });
+    }
+
+    return res.status(response.status).json(data);
 
   } catch (error) {
-    return res.status(500).json({ 
-      message: 'Không thể kết nối máy chủ', 
-      error: error.message 
+    clearTimeout(timeoutId);
+    const isTimeout = error.name === 'AbortError';
+    return res.status(500).json({
+      message: isTimeout ? 'Hết thời gian chờ máy chủ phản hồi (Timeout).' : 'Lỗi kết nối máy chủ game.',
+      error: error.message
     });
   }
 }
