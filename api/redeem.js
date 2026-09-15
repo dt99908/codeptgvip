@@ -6,13 +6,13 @@ export default async function handler(req, res) {
   const { user_code, coupon_code } = req.body || {};
 
   if (!user_code || !coupon_code) {
-    return res.status(400).json({ message: 'Thiếu thông tin' });
+    return res.status(400).json({ message: 'Thiếu Game ID hoặc Mã Code' });
   }
 
   try {
-    // Sử dụng proxy để bypass chặn IP từ Vercel
+    // Sử dụng proxy miễn phí AllOrigins
     const targetUrl = 'https://coupon.haegin.kr/api/coupon/use';
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
     const response = await fetch(proxyUrl, {
       method: 'POST',
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     return res.status(500).json({ 
-      message: 'Lỗi kết nối máy chủ', 
+      message: 'Không thể kết nối máy chủ', 
       error: error.message 
     });
   }
