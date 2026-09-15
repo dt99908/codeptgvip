@@ -9,17 +9,23 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Thiếu Game ID hoặc Mã Code' });
   }
 
+  // Timeout 10 giây để tránh treo nút "Đang xử lý"
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
     const targetUrl = 'https://coupon.haegin.kr/api/coupon/use';
 
+    // Gọi thẳng, KHÔNG qua proxy (server-to-server không bị CORS chặn)
     const response = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json, text/plain, */*'
+        'Accept': 'application/json, text/plain, */*',
+        // Giả lập trình duyệt thật — nhiều API dạng này chặn theo Origin/Referer/UA
+        'Origin': 'https://coupon.haegin.kr',
+        'Referer': 'https://coupon.haegin.kr/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
       },
       body: JSON.stringify({
         user_code: user_code.trim(),
@@ -31,17 +37,21 @@ export default async function handler(req, res) {
     clearTimeout(timeoutId);
 
     const text = await response.text();
+
     let data;
     try {
       data = JSON.parse(text);
     } catch {
-      // Server trả về không phải JSON (VD: HTML lỗi, chặn bot...)
+      // Server không trả JSON hợp lệ (HTML lỗi, chặn bot, đổi endpoint...)
+      // Trả kèm "raw" để debug — sau khi xong có thể bỏ field này đi
       return res.status(502).json({
         message: 'Máy chủ game trả về dữ liệu không hợp lệ.',
-        raw: text.slice(0, 300)
+        status: response.status,
+        raw: text.slice(0, 500)
       });
     }
 
+    // Trả nguyên status code từ API gốc, không ép cứng về 200
     return res.status(response.status).json(data);
 
   } catch (error) {
