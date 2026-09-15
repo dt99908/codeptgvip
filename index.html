@@ -1,219 +1,156 @@
 <!DOCTYPE html>
-<html lang="vi" class="h-full bg-slate-950 text-slate-100">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Play Together - Nhập Giftcode Tự Động</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font (Inter & Plus Jakarta Sans) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play Together Giftcode Redeemer</title>
+  <!-- Tailwind CSS & FontAwesome Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="min-h-full font-sans antialiased bg-slate-950 text-slate-100 flex items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        
-        <!-- Background Gradient Glows -->
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <!-- Header -->
-        <div class="text-center mb-8 relative z-10">
-            <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-2xl text-white shadow-lg shadow-indigo-500/20">
-                <i class="fa-solid fa-gift"></i>
-            </div>
-            <h1 class="text-2xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                Play Together
-            </h1>
-            <p class="text-xs text-slate-400 mt-1">Nhập Game ID & Mã Giftcode để đổi quà ngay</p>
-        </div>
-
-        <form id="coupon-form" onsubmit="handleRedeem(event)" class="space-y-5 relative z-10">
-            
-            <!-- Game ID Input -->
-            <div>
-                <label for="game-id" class="block text-xs font-semibold text-slate-300 mb-2">
-                    Mã ID Game (User ID) <span class="text-pink-500">*</span>
-                </label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 text-sm">
-                        <i class="fa-solid fa-user"></i>
-                    </span>
-                    <input 
-                        type="text" 
-                        id="game-id" 
-                        required 
-                        placeholder="Nhập ID trong game (Ví dụ: 12345678)" 
-                        class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-all duration-200"
-                    >
-                </div>
-            </div>
-
-            <!-- Coupon Code Input -->
-            <div>
-                <label for="coupon-code" class="block text-xs font-semibold text-slate-300 mb-2">
-                    Mã Giftcode / Coupon <span class="text-pink-500">*</span>
-                </label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 text-sm">
-                        <i class="fa-solid fa-ticket"></i>
-                    </span>
-                    <input 
-                        type="text" 
-                        id="coupon-code" 
-                        required 
-                        placeholder="Nhập mã quà tặng..." 
-                        class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 uppercase tracking-wider font-mono placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-all duration-200"
-                    >
-                </div>
-            </div>
-
-            <!-- Submit Button -->
-            <button 
-                type="submit" 
-                id="submit-btn" 
-                class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-600/25 transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <span id="btn-icon"><i class="fa-solid fa-paper-plane"></i></span>
-                <span id="btn-text">Nhận Quà</span>
-            </button>
-        </form>
-
-        <div id="result-box" class="hidden mt-6 p-4 rounded-xl border text-xs leading-relaxed transition-all duration-300">
-            <div class="flex items-start gap-3">
-                <div id="result-icon" class="text-base mt-0.5"></div>
-                <div class="flex-1">
-                    <h4 id="result-title" class="font-bold mb-0.5"></h4>
-                    <p id="result-desc" class="text-slate-300"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer Info -->
-        <div class="mt-6 text-center text-[11px] text-slate-500">
-            Lưu ý: Đảm bảo nhân vật đã được đăng nhập trong game trước khi đổi code.
-        </div>
+  <div class="w-full max-w-md bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+    
+    <!-- Header -->
+    <div class="bg-indigo-600 p-6 text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 bg-white/10 rounded-full mb-3 text-white text-2xl">
+        <i class="fa-solid fa-gift"></i>
+      </div>
+      <h1 class="text-xl font-bold text-white">Play Together Giftcode</h1>
+      <p class="text-indigo-200 text-xs mt-1">Nhập Game ID & Mã Giftcode để nhận quà</p>
     </div>
 
-    <script>
-        async function handleRedeem(e) {
-            e.preventDefault();
+    <!-- Form Input -->
+    <div class="p-6 space-y-4">
+      <div>
+        <label for="userId" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+          Game ID (User ID)
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+            <i class="fa-solid fa-user"></i>
+          </span>
+          <input type="text" id="userId" placeholder="Nhập Game ID của bạn" 
+            class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-100 placeholder-slate-500 outline-none transition text-sm">
+        </div>
+      </div>
 
-            const gameIdInput = document.getElementById('game-id');
-            const couponInput = document.getElementById('coupon-code');
-            const submitBtn = document.getElementById('submit-btn');
-            const btnText = document.getElementById('btn-text');
-            const btnIcon = document.getElementById('btn-icon');
-            const resultBox = document.getElementById('result-box');
+      <div>
+        <label for="couponCode" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+          Mã Giftcode / Coupon
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+            <i class="fa-solid fa-ticket"></i>
+          </span>
+          <input type="text" id="couponCode" placeholder="Nhập mã code quà tặng" 
+            class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-100 placeholder-slate-500 outline-none transition text-sm uppercase">
+        </div>
+      </div>
 
-            const userCode = gameIdInput.value.trim();
-            const couponCode = couponInput.value.trim().toUpperCase();
+      <button id="btnSubmit" onclick="handleRedeem()" 
+        class="w-full mt-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        <i id="btnIcon" class="fa-solid fa-paper-plane"></i>
+        <span id="btnText">Nhận Quà</span>
+      </button>
 
-            if (!userCode || !couponCode) return;
+      <!-- Alert Box -->
+      <div id="alertBox" class="hidden p-4 rounded-xl text-xs font-medium border space-y-1">
+        <div class="flex items-center space-x-2 font-bold text-sm">
+          <i id="alertIcon"></i>
+          <span id="alertTitle">Thành công</span>
+        </div>
+        <p id="alertMessage" class="pl-6 text-slate-300"></p>
+      </div>
+    </div>
 
-            // 1. Chuyển UI sang trạng thái Đang xử lý
-            submitBtn.disabled = true;
-            btnText.innerText = "Đang xử lý...";
-            btnIcon.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
-            hideResult();
+    <!-- Footer -->
+    <div class="px-6 py-4 bg-slate-950/50 border-t border-slate-800 text-center">
+      <p class="text-xs text-slate-500">Hệ thống xử lý tự động qua Serverless API</p>
+    </div>
 
-            try {
-                /*
-                 * API nhận code chính thức của Haegin Play Together:
-                 * Target URL: http://haegin.kr/playtogether/coupon/english (hoặc /korean)
-                 * Vì gọi trực tiếp từ trình duyệt có thể bị vướng CORS, bạn có thể gửi qua CORS Proxy hoặc backend proxy của riêng bạn.
-                 */
-                const targetApi = 'https://corsproxy.io/?' + encodeURIComponent('http://haegin.kr/playtogether/coupon/english');
+  </div>
 
-                const response = await fetch(targetApi, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                    },
-                    body: new URLSearchParams({
-                        'user_code': userCode,
-                        'coupon_code': couponCode
-                    })
-                });
+  <script>
+    async function handleRedeem() {
+      const userIdInput = document.getElementById('userId');
+      const couponCodeInput = document.getElementById('couponCode');
+      const btnSubmit = document.getElementById('btnSubmit');
+      const btnIcon = document.getElementById('btnIcon');
+      const btnText = document.getElementById('btnText');
+      const alertBox = document.getElementById('alertBox');
+      const alertIcon = document.getElementById('alertIcon');
+      const alertTitle = document.getElementById('alertTitle');
+      const alertMessage = document.getElementById('alertMessage');
 
-                // Xử lý phản hồi từ Server
-                if (response.ok) {
-                    const textResult = await response.text();
-                    
-                    // Thử parse JSON nếu API trả về dạng JSON
-                    try {
-                        const json = JSON.parse(textResult);
-                        if (json.result === 0 || json.status === 'success' || json.code === 200) {
-                            showResult(true, 'Đổi quà thành công!', json.message || 'Phần thưởng đã được gửi vào hòm thư trong game Play Together của bạn.');
-                        } else {
-                            showResult(false, 'Đổi quà thất bại', json.message || 'Mã giftcode không hợp lệ, đã hết hạn hoặc Game ID không tồn tại.');
-                        }
-                    } catch (err) {
-                        // Nếu response trả về chuỗi HTML/Text thông thường
-                        if (textResult.includes('success') || textResult.includes(' thành công') || textResult.includes('Success')) {
-                            showResult(true, 'Đổi quà thành công!', 'Phần thưởng đã được gửi tới tài khoản của bạn.');
-                        } else {
-                            showResult(false, 'Không thể nhận quà', 'Mã Giftcode đã được sử dụng, hết hạn hoặc ID nhân vật không chính xác.');
-                        }
-                    }
-                } else {
-                    showResult(false, 'Lỗi kết nối', `Máy chủ phản hồi mã lỗi ${response.status}. Vui lòng thử lại sau.`);
-                }
-            } catch (error) {
-                // Trường hợp giả lập nếu API bị chặn hoàn toàn do môi trường trình duyệt sandbox
-                console.error("Redeem API Error:", error);
-                
-                // Demo phản hồi UI trực quan khi gặp lỗi kết nối
-                showResult(false, 'Không gửi được yêu cầu', 'Lỗi kết nối mạng hoặc bị chặn CORS. Bạn cần chạy thông qua một Backend Proxy nhỏ để xử lý POST request.');
-            } finally {
-                // Trả UI về trạng thái ban đầu
-                submitBtn.disabled = false;
-                btnText.innerText = "Nhận Quà";
-                btnIcon.innerHTML = `<i class="fa-solid fa-paper-plane"></i>`;
-            }
+      const userId = userIdInput.value.trim();
+      const couponCode = couponCodeInput.value.trim();
+
+      if (!userId || !couponCode) {
+        showAlert('error', 'Chưa đủ thông tin', 'Vui lòng điền đầy đủ Game ID và Mã Giftcode!');
+        return;
+      }
+
+      // Trạng thái Loading
+      btnSubmit.disabled = true;
+      btnIcon.className = 'fa-solid fa-spinner animate-spin';
+      btnText.innerText = 'Đang xử lý...';
+      alertBox.classList.add('hidden');
+
+      try {
+        // Gửi request đến Serverless Function vừa tạo
+        const response = await fetch('/api/redeem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_code: userId,
+            coupon_code: couponCode
+          })
+        });
+
+        const data = await response.json();
+
+        // Kiểm tra phản hồi
+        if (response.ok && (data.ret === 0 || data.code === 0 || data.success === true)) {
+          const msg = data.msg || data.message || 'Code hợp lệ! Vui lòng kiểm tra hộp thư trong game.';
+          showAlert('success', 'Thành Công!', msg);
+        } else {
+          const errorMsg = data.msg || data.message || data.error || 'Mã code không đúng, đã hết hạn hoặc đã được sử dụng.';
+          showAlert('error', 'Không Thể Nhận Quà', errorMsg);
         }
+      } catch (error) {
+        showAlert('error', 'Lỗi Kết Nối', 'Không thể gửi yêu cầu tới máy chủ. Vui lòng kiểm tra kết nối mạng.');
+      } finally {
+        // Đặt lại trạng thái Nút bấm
+        btnSubmit.disabled = false;
+        btnIcon.className = 'fa-solid fa-paper-plane';
+        btnText.innerText = 'Nhận Quà';
+      }
+    }
 
-        function showResult(isSuccess, title, message) {
-            const resultBox = document.getElementById('result-box');
-            const resultIcon = document.getElementById('result-icon');
-            const resultTitle = document.getElementById('result-title');
-            const resultDesc = document.getElementById('result-desc');
+    function showAlert(type, title, message) {
+      const alertBox = document.getElementById('alertBox');
+      const alertIcon = document.getElementById('alertIcon');
+      const alertTitle = document.getElementById('alertTitle');
+      const alertMessage = document.getElementById('alertMessage');
 
-            resultBox.classList.remove('hidden');
+      alertBox.classList.remove('hidden', 'bg-emerald-950/50', 'border-emerald-800', 'text-emerald-400', 'bg-rose-950/50', 'border-rose-800', 'text-rose-400');
 
-            if (isSuccess) {
-                resultBox.className = "mt-6 p-4 rounded-xl border text-xs leading-relaxed transition-all duration-300 bg-emerald-950/40 border-emerald-800/80 text-emerald-200";
-                resultIcon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i>`;
-                resultTitle.className = "font-bold mb-0.5 text-emerald-300";
-            } else {
-                resultBox.className = "mt-6 p-4 rounded-xl border text-xs leading-relaxed transition-all duration-300 bg-rose-950/40 border-rose-800/80 text-rose-200";
-                resultIcon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i>`;
-                resultTitle.className = "font-bold mb-0.5 text-rose-300";
-            }
+      if (type === 'success') {
+        alertBox.classList.add('bg-emerald-950/50', 'border-emerald-800', 'text-emerald-400');
+        alertIcon.className = 'fa-solid fa-circle-check';
+      } else {
+        alertBox.classList.add('bg-rose-950/50', 'border-rose-800', 'text-rose-400');
+        alertIcon.className = 'fa-solid fa-circle-xmark';
+      }
 
-            resultTitle.innerText = title;
-            resultDesc.innerText = message;
-        }
-
-        function hideResult() {
-            const resultBox = document.getElementById('result-box');
-            resultBox.classList.add('hidden');
-        }
-    </script>
+      alertTitle.innerText = title;
+      alertMessage.innerText = message;
+    }
+  </script>
 </body>
 </html>
+
